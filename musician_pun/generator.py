@@ -32,7 +32,7 @@ class SubwordFinder:
         for win_len in range(len(sylls), 0, -1):
             for offset in range(len(sylls) - win_len + 1):
                 subword = ''.join(sylls[offset:offset+win_len]).lower()
-                if not subword in model:
+                if subword not in model:
                     continue
                 self.subwords.append((
                     sylls[:offset], subword, sylls[offset+win_len:]
