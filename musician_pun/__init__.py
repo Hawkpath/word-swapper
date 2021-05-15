@@ -1,90 +1,84 @@
-from collections.abc import MutableSequence
 import random
-from typing import Annotated as A, Generic, Optional, TypeVar
+from typing import Annotated as A, Set, Tuple, TypeVar
 
 from nltk import word_tokenize
-from nltk.corpus import words, wordnet
-from nltk.tokenize import *
+from nltk.corpus import wordnet, words as corpus_words
+from nltk.tokenize import LegalitySyllableTokenizer
 
 V = TypeVar('V')
 
 
-class FlatJaggedArray(Generic[V]):
+class DerivativeWord:
 
-    def __init__(self, seq: MutableSequence[MutableSequence[V]]):
-        self.seq = seq
+    __tokenizer = LegalitySyllableTokenizer(corpus_words.words())
+
+    def __init__(self, word: str):
+        self.word = word
+        self.syllables = self.__tokenizer.tokenize(word)
+        self._generate_derivatives()
+
+    def _generate_derivatives(self):
+        sylls = self.syllables
+        self.derivatives = []
+        for win_len in range(len(sylls), 0, -1):
+            for offset in range(len(sylls) - win_len + 1):
+                subword = ''.join(sylls[offset:offset+win_len])
+                _, antonyms = self.thesaurize(subword)
+                for antonym in antonyms:
+                    self.derivatives.append(''.join((
+                        sylls[:offset] + [antonym] + sylls[offset+win_len:]
+                    )))
 
     def __len__(self):
-        count = 0
-        for i in self.seq:
-            count += len(i)
-        return count
+        return len(self.derivatives)
 
-    def __getitem__(self, index: int) -> V:
-        x = index
-        for y_list in self.seq:
-            try:
-                return y_list[x]
-            except IndexError:
-                x -= len(y_list)
-        raise IndexError(
-            f"Flat index {index} out of bounds for jagged array with flat "
-            f"length of {len(self)}"
-        )
+    def __iter__(self):
+        return iter(self.derivatives)
 
-    def __setitem__(self, index: int, value: V):
-        x = index
-        for y_list in self.seq:
-            try:
-                y_list[x] = value
-                return
-            except IndexError:
-                x -= len(y_list)
-        raise IndexError(
-            f"Flat index {index} out of bounds for jagged array with flat "
-            f"length of {len(self)}"
-        )
+    def __getitem__(self, index: int):
+        return self.derivatives[index]
+
+    @staticmethod
+    def thesaurize(
+            word: str
+    ) -> Tuple[A[Set[str], 'synonyms'], A[Set[str], 'antonyms']]:
+        synonyms = []
+        antonyms = []
+
+        for syn in wordnet.synsets(word):
+            for lemma in syn.lemmas():
+                synonyms.append(lemma.name())
+                if lemma.antonyms():
+                    antonyms.append(lemma.antonyms()[0].name())
+
+        return set(synonyms), set(antonyms)
 
 
-def tokenize(text: str):
-    text_words = word_tokenize(text)
-    # tokenizer = LegalitySyllableTokenizer(words.words())
-    # tokenizer = TweetTokenizer()
-    tokenizer = LegalitySyllableTokenizer()
-    return [tokenizer.tokenize(word) for word in text_words]
+def make_pun(text: str):
+    text = text.replace('-', ' ')
+    words = []
+    derivatives_count = 0
+    for word in word_tokenize(text):
+        derivative = DerivativeWord(word)
+        words.append(derivative)
+        derivatives_count += len(derivative)
 
-
-def thesaurize(
-        word: str
-) -> tuple[A[set[str], 'synonyms'], A[set[str], 'antonyms']]:
-    synonyms = []
-    antonyms = []
-
-    for syn in wordnet.synsets(word):
-        for lemma in syn.lemmas():
-            synonyms.append(lemma.name())
-            if lemma.antonyms():
-                antonyms.append(lemma.antonyms()[0].name())
-
-    return set(synonyms), set(antonyms)
-
-
-def make_pun(text) -> Optional[str]:
-    tokenized_words: list[list[str]] = tokenize(text)
-    flat = FlatJaggedArray(tokenized_words)
-    indices = list(range(len(flat)))
-    random.shuffle(indices)
-    for i in indices:
-        synonyms, antonyms = thesaurize(flat[i])
-        if not antonyms:
-            continue
-        replacement = random.choice(list(antonyms))
-        flat[i] = replacement
-        break
+    if derivatives_count:
+        choice = random.randint(0, derivatives_count-1)
     else:
-        return None
+        choice = 0
+    out = []
+    for word in words:
+        try:
+            out.append(word[choice])
+            choice = None
+        except (IndexError, TypeError):
+            out.append(word.word)
+            if choice is not None:
+                choice -= len(word)
 
-    return ' '.join(''.join(i) for i in tokenized_words)
+    return ' '.join(out)
 
 
+a = make_pun('Third Eye Blind')
 pass
