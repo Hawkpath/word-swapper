@@ -1,3 +1,4 @@
+import logging
 import random
 from typing import List, Optional, Tuple, TypeVar, cast
 
@@ -11,9 +12,13 @@ __all__ = (
     'make_pun',
 )
 
+logger = logging.getLogger('musician_pun.generator')
+
 V = TypeVar('V')
 
+logger.info('Loading language model')
 model: Word2VecKeyedVectors = gensim_api.load("glove-twitter-25")
+logger.info('Language model successfully loaded')
 
 
 class SubwordFinder:
