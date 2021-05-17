@@ -70,15 +70,15 @@ def make_pun(text: str, similar_count=10) -> Optional[str]:
 
     out = [w.word for w in words]
 
-    splitted = [w for w in words if w.subwords]
-    if not splitted:
+    words_with_subwords = [(i, w) for i, w in enumerate(words) if w.subwords]
+    if not words_with_subwords:
         return
     # Get a random splittable word
-    i, subfinder = random.choice(list(enumerate(splitted)))
-    subfinder = cast(SubwordFinder, subfinder)
+    random_word_idx, random_word = random.choice(words_with_subwords)
+    random_word = cast(SubwordFinder, random_word)
 
     # Get a random subword
-    subword_start, subword, subword_end = random.choice(subfinder.subwords)
+    subword_start, subword, subword_end = random.choice(random_word.subwords)
 
     # Get a list of similar words from the model
     similars: List[Tuple[str, float]] = model.most_similar(
@@ -93,7 +93,7 @@ def make_pun(text: str, similar_count=10) -> Optional[str]:
     # Join the splits of this word together with the random similar word
     new_word = ''.join(subword_start + [similar_subword] + subword_end)
 
-    out[i] = new_word
+    out[random_word_idx] = new_word
     logger.debug(
         f"{''.join(subword_start)}[{subword}]{''.join(subword_end)} "
         f"{subword} -> {similar_subword}"
