@@ -1,7 +1,7 @@
 # Project
 */config.json
 */logs
-generator_bad_words.json
+bad_words.json
 *.db
 *.db-journal
 

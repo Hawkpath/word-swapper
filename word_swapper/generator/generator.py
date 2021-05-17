@@ -37,16 +37,14 @@ ignored_words = {
 }
 ignored_words |= set(punctuation)
 
-bad_words_file = Path(__file__, '../generator_bad_words.json')
+bad_words_file = Path(__file__, '../bad_words.json')
 if bad_words_file.exists():
     with bad_words_file.open() as f:
         bad_words = set(json.load(f))
-    logger.info(f"Loaded generator_bad_words.json with {len(bad_words)} words")
+    logger.info(f"Loaded bad_words.json with {len(bad_words)} words")
 else:
     bad_words = set()
-    logger.info(
-        f"generator_bad_words.json does not exist, continue with caution!"
-    )
+    logger.info(f"bad_words.json does not exist, proceed with caution!")
 
 
 class SubwordFinder:
