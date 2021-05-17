@@ -22,7 +22,7 @@ logger.info('Language model successfully loaded')
 
 
 ignored_words = {
-    'the', 'a', 'an', 'in', 'on', 'and'
+    'the', 'a', 'an', 'in', 'on', 'and', 'of', 'for', 'or'
 }
 
 
