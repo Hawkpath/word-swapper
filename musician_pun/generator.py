@@ -57,7 +57,7 @@ class SubwordFinder:
         if len(sylls) == 1:
             word = sylls[0].lower()
             if word in model and word not in ignored_words:
-                self.subwords = [([], sylls[0], [])]
+                self.subwords = [([], word, [])]
             return
 
         for window in range(len(sylls), 1, -1):
