@@ -32,7 +32,7 @@ def load_word_set(file_name: str) -> Set[str]:
     return set()
 
 
-ignored_words = load_word_set('ignored_words') | set(punctuation)
+ignored_words = load_word_set('ignored_words.json') | set(punctuation)
 bad_words = load_word_set('bad_words.json')
 
 logger.info('Loading language model')
