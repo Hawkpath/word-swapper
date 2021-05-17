@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 import random
 from string import punctuation
-from typing import List, Optional, Tuple, TypeVar, cast
+from typing import List, Optional, Set, Tuple, TypeVar, cast
 
 import gensim.downloader as gensim_api
 from gensim.models.keyedvectors import Word2VecKeyedVectors
@@ -19,32 +19,25 @@ logger = logging.getLogger(__name__)
 
 V = TypeVar('V')
 
+
+def load_word_set(file_name: str) -> Set[str]:
+    file = Path(__file__, '..', file_name)
+    if file.exists():
+        with file.open() as f:
+            out = set(json.load(f))
+        logger.info(f"Loaded {file_name} with {len(out)} words")
+        return out
+
+    logger.info(f"{file_name} does not exist")
+    return set()
+
+
+ignored_words = load_word_set('ignored_words') | set(punctuation)
+bad_words = load_word_set('bad_words.json')
+
 logger.info('Loading language model')
 model: Word2VecKeyedVectors = gensim_api.load("glove-wiki-gigaword-100")
 logger.info('Language model successfully loaded')
-
-ignored_words = {
-    'a',
-    'an',
-    'and',
-    'for',
-    'in',
-    'is',
-    'of',
-    'on',
-    'or',
-    'the',
-}
-ignored_words |= set(punctuation)
-
-bad_words_file = Path(__file__, '../bad_words.json')
-if bad_words_file.exists():
-    with bad_words_file.open() as f:
-        bad_words = set(json.load(f))
-    logger.info(f"Loaded bad_words.json with {len(bad_words)} words")
-else:
-    bad_words = set()
-    logger.info(f"bad_words.json does not exist, proceed with caution!")
 
 
 class SubwordFinder:
