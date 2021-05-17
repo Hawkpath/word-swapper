@@ -2,6 +2,7 @@ import json
 import logging
 from pathlib import Path
 import random
+from string import punctuation
 from typing import List, Optional, Tuple, TypeVar, cast
 
 import gensim.downloader as gensim_api
@@ -26,6 +27,7 @@ logger.info('Language model successfully loaded')
 ignored_words = {
     'the', 'a', 'an', 'in', 'on', 'and', 'of', 'for', 'or'
 }
+ignored_words += set(punctuation)
 
 bad_words_file = Path(__file__, '../generator_bad_words.json')
 if bad_words_file.exists():
