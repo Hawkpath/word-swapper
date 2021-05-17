@@ -69,6 +69,24 @@ class Cog(commands.Cog):
             pun = "Failed to generate anything"
         await ctx.send(pun)
 
+    @commands.Cog.listener('on_raw_reaction_add')
+    async def reroll(self, react: discord.RawReactionActionEvent):
+        if react.user_id == self.bot.user.id:
+            return
+
+        emoji: discord.PartialEmoji = react.emoji
+        if emoji.name == '🎲':
+            await self.do_reroll(react.channel_id, react.message_id)
+
+    async def do_reroll(self, chan_id: int, msg_id: int):
+        chan: discord.TextChannel = self.bot.get_channel(chan_id)
+        msg: discord.Message = await chan.fetch_message(msg_id)
+        logger.info(f"Rerolling message")
+        async for msg in chan.history(limit=3, before=msg):
+            if not msg.content.startswith(self.bot.command_prefix):
+                continue
+            await self.bot.process_commands(msg)
+
 
 def main():
     import json
