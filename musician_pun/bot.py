@@ -130,10 +130,15 @@ class Cog(commands.Cog):
         if emoji.name != self.REROLL_EMOJI:
             return
 
-        logger.info(f"Rerolling message")
         chan: discord.TextChannel = self.bot.get_channel(react.channel_id)
         msg: discord.Message = await chan.fetch_message(react.message_id)
+        if not discord.utils.find(lambda r: r.me, msg.reactions):
+            return
 
+        logger.info(
+            f"Rerolling message (user_requesting={react.member.name} "
+            f"content=\"{msg.content}\")"
+        )
         await msg.remove_reaction(emoji.name, react.member)
         await self.bot.process_commands(msg)
 
