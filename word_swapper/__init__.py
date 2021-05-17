@@ -10,8 +10,10 @@ log_format = '%(asctime)s %(name)s %(levelname)s %(message)s'
 coloredlogs.DEFAULT_FIELD_STYLES['name'] = {'color': 'white', 'faint': True}
 coloredlogs.install(level='DEBUG', logger=logger, fmt=log_format)
 
+log_file = Path(__file__, '../logs/musician_pun.log')
+log_file.parent.mkdir(exist_ok=True)
 handler = TimedRotatingFileHandler(
-    filename=Path(__file__, '../logs/musician_pun.log'),
+    filename=log_file,
     when='midnight',
     interval=1,
     backupCount=7,
