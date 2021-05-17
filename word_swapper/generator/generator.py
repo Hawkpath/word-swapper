@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 import random
 from string import punctuation
-from typing import List, Optional, Set, Tuple, TypeVar, cast
+from typing import List, Optional, Set, Tuple, TypeVar
 
 import gensim.downloader as gensim_api
 from gensim.models.keyedvectors import Word2VecKeyedVectors
@@ -28,7 +28,7 @@ def load_word_set(file_name: str) -> Set[str]:
         logger.info(f"Loaded {file_name} with {len(out)} words")
         return out
 
-    logger.info(f"{file_name} does not exist")
+    logger.info(f"{file_name} does not exist, it will be ignored")
     return set()
 
 
@@ -89,7 +89,6 @@ def make_pun(text: str, similar_count=10) -> Optional[str]:
         return
     # Get a random splittable word
     random_word_idx, random_word = random.choice(words_with_subwords)
-    random_word = cast(SubwordFinder, random_word)
 
     # Get a random subword
     subword_start, subword, subword_end = random.choice(random_word.subwords)
