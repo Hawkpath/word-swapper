@@ -23,11 +23,19 @@ logger.info('Loading language model')
 model: Word2VecKeyedVectors = gensim_api.load("glove-wiki-gigaword-100")
 logger.info('Language model successfully loaded')
 
-
 ignored_words = {
-    'the', 'a', 'an', 'in', 'on', 'and', 'of', 'for', 'or'
+    'a',
+    'an',
+    'and',
+    'for',
+    'in',
+    'is',
+    'of',
+    'on',
+    'or',
+    'the',
 }
-ignored_words += set(punctuation)
+ignored_words |= set(punctuation)
 
 bad_words_file = Path(__file__, '../generator_bad_words.json')
 if bad_words_file.exists():
