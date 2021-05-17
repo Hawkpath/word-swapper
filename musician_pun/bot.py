@@ -11,8 +11,8 @@ logger = logging.getLogger('musician_pun.bot')
 
 class Bot(commands.Bot):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, max_messages=None, **kwargs):
+        super().__init__(*args, max_messages=max_messages, **kwargs)
         self.add_cog(Cog(self))
 
     async def on_connect(self):
