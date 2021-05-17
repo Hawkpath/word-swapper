@@ -17,7 +17,7 @@ logger = logging.getLogger('musician_pun.generator')
 V = TypeVar('V')
 
 logger.info('Loading language model')
-model: Word2VecKeyedVectors = gensim_api.load("glove-twitter-25")
+model: Word2VecKeyedVectors = gensim_api.load("glove-wiki-gigaword-100")
 logger.info('Language model successfully loaded')
 
 
