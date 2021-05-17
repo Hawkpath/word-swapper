@@ -56,8 +56,6 @@ The only value you need to set is the `bot_token`.
 }
 ```
 
-See [config](#config) for more configuration options.
-
 ### Running Word Swapper
 
 #### Basic
