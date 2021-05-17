@@ -85,13 +85,17 @@ def make_pun(text: str, similar_count=10) -> Optional[str]:
         positive=subword, topn=similar_count
     )
     # Pick a random similar word using their weights
-    changed = random.choices(
+    similar_subword = random.choices(
         population=[i[0] for i in similars],
         weights=[i[1] for i in similars],
         k=1
     )[0]
     # Join the splits of this word together with the random similar word
-    changed = ''.join(subword_start + [changed] + subword_end)
+    new_word = ''.join(subword_start + [similar_subword] + subword_end)
 
-    out[i] = changed
+    out[i] = new_word
+    logger.debug(
+        f"{''.join(subword_start)}[{subword}]{''.join(subword_end)} "
+        f"{subword} -> {similar_subword}"
+    )
     return ' '.join(out)
