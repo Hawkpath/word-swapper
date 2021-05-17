@@ -1,5 +1,6 @@
 import logging
 import sys
+from typing import cast
 
 import discord
 import discord.ext.commands as commands
@@ -9,6 +10,7 @@ from .generator import make_pun
 logger = logging.getLogger('musician_pun.bot')
 
 
+# noinspection PyMethodMayBeStatic
 class Bot(commands.Bot):
 
     def __init__(self, *args, max_messages=None, **kwargs):
@@ -59,6 +61,8 @@ class Bot(commands.Bot):
 
 class Cog(commands.Cog):
 
+    REROLL_EMOJI = '🎲'
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
@@ -67,6 +71,7 @@ class Cog(commands.Cog):
         pun = make_pun(phrase)
         if pun is None:
             pun = "Failed to generate anything"
+        await cast(discord.Message, ctx.message).add_reaction(self.REROLL_EMOJI)
         await ctx.send(pun)
 
     @commands.Cog.listener('on_raw_reaction_add')
@@ -75,17 +80,15 @@ class Cog(commands.Cog):
             return
 
         emoji: discord.PartialEmoji = react.emoji
-        if emoji.name == '🎲':
-            await self.do_reroll(react.channel_id, react.message_id)
+        if emoji.name != self.REROLL_EMOJI:
+            return
 
-    async def do_reroll(self, chan_id: int, msg_id: int):
-        chan: discord.TextChannel = self.bot.get_channel(chan_id)
-        msg: discord.Message = await chan.fetch_message(msg_id)
         logger.info(f"Rerolling message")
-        async for msg in chan.history(limit=3, before=msg):
-            if not msg.content.startswith(self.bot.command_prefix):
-                continue
-            await self.bot.process_commands(msg)
+        chan: discord.TextChannel = self.bot.get_channel(react.channel_id)
+        msg: discord.Message = await chan.fetch_message(react.message_id)
+
+        await msg.remove_reaction(emoji.name, react.member)
+        await self.bot.process_commands(msg)
 
 
 def main():
