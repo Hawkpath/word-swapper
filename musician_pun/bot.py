@@ -1,3 +1,6 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from importlib import import_module
 import logging
 import sys
 from typing import cast
@@ -5,7 +8,15 @@ from typing import cast
 import discord
 import discord.ext.commands as commands
 
-from .generator import make_pun
+make_pun = None
+
+
+def _load_expensive_modules():
+    generator = import_module('.generator', package=__package__)
+    global make_pun
+    # noinspection PyUnresolvedReferences
+    make_pun = generator.make_pun
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +25,34 @@ logger = logging.getLogger(__name__)
 class Bot(commands.Bot):
 
     def __init__(self, *args, max_messages=None, **kwargs):
-        super().__init__(*args, max_messages=max_messages, **kwargs)
+        self._first_run = True
+
+        kwargs.pop('activity', None)
+        kwargs.pop('status', None)
+        activity = discord.Game("Loading...")
+        status = discord.Status.dnd
+        super().__init__(
+            *args,
+            max_messages=max_messages, activity=activity, status=status,
+            **kwargs
+        )
+
         self.add_cog(Cog(self))
+        asyncio.run_coroutine_threadsafe(self._expensive_setup(), loop=self.loop)
+
+    async def _expensive_setup(self):
+        logger.info(f"Starting expensive setup")
+        with ThreadPoolExecutor() as pool:
+            self._expensive_setup_fut = self.loop.create_future()
+            await self.loop.run_in_executor(pool, _load_expensive_modules)
+            self._expensive_setup_fut.set_result(True)
+        logger.info(f"Expensive setup complete")
+
+    async def _presence_setup_complete(self):
+        await self.change_presence(
+            activity=discord.Game(f"{self.command_prefix}help"),
+            status=discord.Status.online
+        )
 
     async def on_connect(self):
         logger.info('Client connected')
@@ -28,6 +65,10 @@ class Bot(commands.Bot):
 
     async def on_ready(self):
         logger.info('Client started')
+        if self._first_run:
+            self._first_run = False
+            await self._expensive_setup_fut
+            await self._presence_setup_complete()
 
     async def on_error(self, event_method: str, *args, **kwargs):
         exc_type, exc, tb = sys.exc_info()
@@ -68,6 +109,12 @@ class Cog(commands.Cog):
 
     @commands.command('pun')
     async def pun(self, ctx: commands.Context, *, phrase: str):
+        if make_pun is None:
+            # Still loading the module
+            await ctx.send("Hold on, still loading!")
+            return
+
+        # noinspection PyCallingNonCallable
         pun = make_pun(phrase)
         if pun is None:
             pun = "Failed to generate anything"
