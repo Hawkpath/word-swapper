@@ -34,13 +34,13 @@ class SubwordFinder:
     def _generate_splits(self):
         sylls = self.syllables
         self.subwords = []
-        for win_len in range(len(sylls), 0, -1):
-            for offset in range(len(sylls) - win_len + 1):
-                subword = ''.join(sylls[offset:offset+win_len]).lower()
+        for window in range(len(sylls), 1, -1):
+            for offset in range(len(sylls) - window + 1):
+                subword = ''.join(sylls[offset:offset+window]).lower()
                 if subword not in model:
                     continue
                 self.subwords.append((
-                    sylls[:offset], subword, sylls[offset+win_len:]
+                    sylls[:offset], subword, sylls[offset+window:]
                 ))
 
     def __len__(self):
