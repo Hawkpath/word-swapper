@@ -1,4 +1,6 @@
+import json
 import logging
+from pathlib import Path
 import random
 from typing import List, Optional, Tuple, TypeVar, cast
 
@@ -24,6 +26,17 @@ logger.info('Language model successfully loaded')
 ignored_words = {
     'the', 'a', 'an', 'in', 'on', 'and', 'of', 'for', 'or'
 }
+
+bad_words_file = Path(__file__, '../generator_bad_words.json')
+if bad_words_file.exists():
+    with bad_words_file.open() as f:
+        bad_words = set(json.load(f))
+    logger.info(f"Loaded generator_bad_words.json with {len(bad_words)} words")
+else:
+    bad_words = set()
+    logger.info(
+        f"generator_bad_words.json does not exist, continue with caution!"
+    )
 
 
 class SubwordFinder:
@@ -90,6 +103,18 @@ def make_pun(text: str, similar_count=10) -> Optional[str]:
         weights=[i[1] for i in similars],
         k=1
     )[0]
+
+    # Hopefully don't say anything super bad...
+    if similar_subword.lower() in bad_words:
+        logger.debug(f"Really bad word rejected: {similar_subword}")
+        return (
+            "I generated a really bad word but it was silenced by a "
+            "bad words blacklist. I'm using a language model trained from "
+            "Wikipedia articles, so it's possible more really bad words may "
+            "be unaccounted for. I'm sorry if this happens, it's fully "
+            "unintentional."
+        )
+
     # Join the splits of this word together with the random similar word
     new_word = ''.join(subword_start + [similar_subword] + subword_end)
 
