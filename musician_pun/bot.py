@@ -7,7 +7,7 @@ import discord.ext.commands as commands
 
 from .generator import make_pun
 
-logger = logging.getLogger('musician_pun.bot')
+logger = logging.getLogger(__name__)
 
 
 # noinspection PyMethodMayBeStatic

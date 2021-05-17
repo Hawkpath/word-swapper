@@ -15,7 +15,7 @@ __all__ = (
     'make_pun',
 )
 
-logger = logging.getLogger('musician_pun.generator')
+logger = logging.getLogger(__name__)
 
 V = TypeVar('V')
 
