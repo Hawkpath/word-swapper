@@ -21,6 +21,11 @@ model: Word2VecKeyedVectors = gensim_api.load("glove-wiki-gigaword-100")
 logger.info('Language model successfully loaded')
 
 
+ignored_words = {
+    'the', 'a', 'an', 'in', 'on', 'and'
+}
+
+
 class SubwordFinder:
     """Find subwords within an existing word"""
 
@@ -34,10 +39,16 @@ class SubwordFinder:
     def _generate_splits(self):
         sylls = self.syllables
         self.subwords = []
+        if len(sylls) == 1:
+            word = sylls[0].lower()
+            if word in model and word not in ignored_words:
+                self.subwords = [([], sylls[0], [])]
+            return
+
         for window in range(len(sylls), 1, -1):
             for offset in range(len(sylls) - window + 1):
                 subword = ''.join(sylls[offset:offset+window]).lower()
-                if subword not in model:
+                if subword not in model or subword in ignored_words:
                     continue
                 self.subwords.append((
                     sylls[:offset], subword, sylls[offset+window:]
