@@ -29,11 +29,9 @@ class Bot(commands.Bot):
 
         kwargs.pop('activity', None)
         kwargs.pop('status', None)
-        activity = discord.Game("Loading...")
-        status = discord.Status.dnd
         super().__init__(
             *args,
-            max_messages=max_messages, activity=activity, status=status,
+            max_messages=max_messages,
             **kwargs
         )
 
@@ -47,6 +45,12 @@ class Bot(commands.Bot):
             await self.loop.run_in_executor(pool, _load_expensive_modules)
             self._expensive_setup_fut.set_result(True)
         logger.info(f"Expensive setup complete")
+
+    async def _presence_setup_starting(self):
+        await self.change_presence(
+            activity=discord.Game(f"Loading..."),
+            status=discord.Status.dnd
+        )
 
     async def _presence_setup_complete(self):
         await self.change_presence(
@@ -67,6 +71,7 @@ class Bot(commands.Bot):
         logger.info('Client started')
         if self._first_run:
             self._first_run = False
+            await self._presence_setup_starting()
             await self._expensive_setup_fut
             await self._presence_setup_complete()
 
