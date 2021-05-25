@@ -114,13 +114,24 @@ class Cog(commands.Cog):
 
     @commands.command('pun')
     async def pun(self, ctx: commands.Context, *, phrase: str):
+        await self.do_pun(ctx, phrase, 1)
+
+    @commands.command('puns')
+    async def puns(
+            self, ctx: commands.Context, substitutions: int, *, phrase: str
+    ):
+        await self.do_pun(ctx, phrase, substitutions)
+
+    async def do_pun(
+            self, ctx: commands.Context, phrase: str, substitutions: int
+    ):
         if make_pun is None:
             # Still loading the module
             await ctx.send("Hold on, still loading!")
             return
 
         # noinspection PyCallingNonCallable
-        pun = make_pun(phrase)
+        pun = make_pun(phrase, substitutions)
         if pun is None:
             pun = "Failed to generate anything"
         await cast(discord.Message, ctx.message).add_reaction(self.REROLL_EMOJI)
