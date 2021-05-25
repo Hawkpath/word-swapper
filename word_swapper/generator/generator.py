@@ -40,6 +40,10 @@ model: Word2VecKeyedVectors = gensim_api.load("glove-wiki-gigaword-100")
 logger.info('Language model successfully loaded')
 
 
+class BadWordError(Exception):
+    pass
+
+
 class SubwordFinder:
     """Find subwords within an existing word"""
 
@@ -78,20 +82,9 @@ class SubwordFinder:
         return self.subwords[index]
 
 
-def make_pun(text: str, similar_count=10) -> Optional[str]:
-    text = text.replace('-', ' ')
-    words = [SubwordFinder(w) for w in word_tokenize(text)]
-
-    out = [w.word for w in words]
-
-    words_with_subwords = [(i, w) for i, w in enumerate(words) if w.subwords]
-    if not words_with_subwords:
-        return
-    # Get a random splittable word
-    random_word_idx, random_word = random.choice(words_with_subwords)
-
+def substitute_word(word: SubwordFinder, similar_count: int):
     # Get a random subword
-    subword_start, subword, subword_end = random.choice(random_word.subwords)
+    subword_start, subword, subword_end = random.choice(word.subwords)
 
     # Get a list of similar words from the model
     similars: List[Tuple[str, float]] = model.most_similar(
@@ -107,20 +100,42 @@ def make_pun(text: str, similar_count=10) -> Optional[str]:
     # Hopefully don't say anything super bad...
     if similar_subword.lower() in bad_words:
         logger.debug(f"Really bad word rejected: {similar_subword}")
-        return (
-            "I generated a really bad word but it was silenced by a "
-            "bad words blacklist. I'm using a language model trained from "
-            "Wikipedia articles, so it's possible more really bad words may "
-            "be unaccounted for. I'm sorry if this happens, it's fully "
-            "unintentional."
-        )
+        raise BadWordError()
 
-    # Join the splits of this word together with the random similar word
-    new_word = ''.join(subword_start + [similar_subword] + subword_end)
-
-    out[random_word_idx] = new_word
     logger.debug(
         f"{''.join(subword_start)}[{subword}]{''.join(subword_end)} "
         f"{subword} -> {similar_subword}"
     )
+
+    # Join the splits of this word together with the random similar word
+    return ''.join(subword_start + [similar_subword] + subword_end)
+
+
+def make_pun(text: str, substitutions=1, similar_count=10) -> Optional[str]:
+    text = text.replace('-', ' ')
+    words = [SubwordFinder(w) for w in word_tokenize(text)]
+
+    out = [w.word for w in words]
+
+    words_with_subwords = [(i, w) for i, w in enumerate(words) if w.subwords]
+    if not words_with_subwords:
+        return
+
+    # Get random splittable words and substitute
+    substitutions = min(substitutions, len(words_with_subwords))
+    for random_word_idx, random_word in random.sample(
+            words_with_subwords, k=substitutions
+    ):
+        try:
+            new_word = substitute_word(random_word, similar_count)
+        except BadWordError:
+            return (
+                "I generated a really bad word but it was silenced by a "
+                "bad words blacklist. I'm using a language model trained from "
+                "Wikipedia articles, so it's possible more really bad words "
+                "may be unaccounted for. I'm sorry if this happens, it's "
+                "fully unintentional."
+            )
+        out[random_word_idx] = new_word
+
     return ' '.join(out)
